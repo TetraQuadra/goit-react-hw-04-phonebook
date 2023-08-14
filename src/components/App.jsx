@@ -1,90 +1,67 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
+import assignId from 'services/asignId';
 import ContactForm from './ContactForm/ContactForm';
 import ContactList from './ContactList/ContactList';
 import Filter from './Filter/Filter';
 
-export class App extends Component {
-  state = {
-    contacts: [
-    ],
-    filter: '',
-  };
+export const App = () => {
+  const [contacts, setContacts] = useState([]);
+  const [filter, setFilter] = useState('');
 
-  componentDidMount() {
+  useEffect(() => {
     const storedContacts = localStorage.getItem('contacts');
-    if (storedContacts) {
-      this.setState({ contacts: JSON.parse(storedContacts) });
+    if (storedContacts?.length > 1) {
+      setContacts(JSON.parse(storedContacts));
+    } else {
+      // Only to simulate that this service was used before and contains some data
+      setContacts([
+        { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
+        { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
+        { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
+        { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
+      ]);
     }
+  }, []);
 
+  useEffect(() => {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+  }, [contacts]);
 
-    //only to simulate that this service was used before and contain some data
-    if (!storedContacts) {
-      this.setState({
-        contacts: [
-          { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-          { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-          { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-          { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-        ]
-      });
-    }
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    const { contacts } = this.state;
-    if (prevState.contacts !== contacts) {
-      localStorage.setItem('contacts', JSON.stringify(contacts));
-    }
-  }
-
-  handleSubmit = ({ name, number }) => {
-    const { contacts } = this.state;
-
-    if (contacts.find(
-      (contact) => contact.name.toLowerCase() === name.toLowerCase()
-    )) {
+  const handleSubmit = ({ name, number }) => {
+    if (contacts.find(contact => contact.name.toLowerCase() === name.toLowerCase())) {
       alert('Contact already exists!');
     } else {
       const newContact = {
         name,
         number,
+        id: assignId(contacts)
       };
-      this.setState((prevState) => ({
-        contacts: [...prevState.contacts, newContact],
-      }));
+      console.log(newContact)
+      setContacts(prevContacts => [...prevContacts, newContact]);
     }
   };
 
-  handleSearch = value => {
-    this.setState({ filter: value });
+  const handleSearch = value => {
+    setFilter(value);
   };
 
-  handleDeleteContact = contactId => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== contactId),
-    }));
+  const handleDeleteContact = contactId => {
+    setContacts(prevContacts => prevContacts.filter(contact => contact.id !== contactId));
   };
 
-  render() {
-    const { contacts, filter } = this.state;
+  const filteredContacts = contacts.filter(contact =>
+    contact.name.toLowerCase().includes(filter.toLowerCase())
+  );
 
-    const filteredContacts = contacts.filter(contact =>
-      contact.name.toLowerCase().includes(filter.toLowerCase())
-    );
+  return (
+    <main>
+      <h1>Phonebook</h1>
+      <ContactForm handleSubmit={handleSubmit} />
+      <h2>Contacts</h2>
+      <Filter filter={filter} handleSearch={handleSearch} />
+      <ContactList contacts={filteredContacts} onDeleteContact={handleDeleteContact} />
+    </main>
+  );
+};
 
-    return (
-      <main>
-        <h1>Phonebook</h1>
-        <ContactForm
-          handleSubmit={this.handleSubmit}
-        />
-        <h2>Contacts</h2>
-        <Filter filter={filter} handleSearch={this.handleSearch} />
-        <ContactList
-          contacts={filteredContacts}
-          onDeleteContact={this.handleDeleteContact}
-        />
-      </main>
-    );
-  }
-}
+export default App;
